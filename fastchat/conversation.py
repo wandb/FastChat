@@ -1573,8 +1573,11 @@ register_conv_template(
 
 # conv template for Custom
 # source: hogehoge
-def initialize_custom_template(language: str):
+def initialize_custom_template(language=None):
     config = WandbConfigSingleton.get_instance().config
+    if language is None:
+        conv_system_message = config.mtbench.conv_system_message
+        conv_roles = config.mtbench.conv_roles
     if language == "ja":
         conv_system_message = config.mtbench.ja.conv_system_message
         conv_roles = config.mtbench.ja.conv_roles
