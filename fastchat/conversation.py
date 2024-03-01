@@ -1578,7 +1578,7 @@ def initialize_custom_template(language=None):
     if language is None:
         conv_system_message = config.mtbench.conv_system_message
         conv_roles = config.mtbench.conv_roles
-    if language == "ja":
+    elif language == "ja":
         conv_system_message = config.mtbench.ja.conv_system_message
         conv_roles = config.mtbench.ja.conv_roles
     elif language == "en":
@@ -1593,7 +1593,8 @@ def initialize_custom_template(language=None):
             sep=config.mtbench.conv_sep,
             stop_token_ids=eval(config.mtbench.conv_stop_token_ids),
             stop_str=config.mtbench.conv_stop_str,
-        )
+        ),
+        override=True
     )
 
 # CatPPT template
