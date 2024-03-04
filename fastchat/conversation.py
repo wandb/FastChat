@@ -1623,18 +1623,28 @@ register_conv_template(
 
 # conv template for Custom
 # source: hogehoge
-def initialize_custom_template():
+def initialize_custom_template(language=None):
     config = WandbConfigSingleton.get_instance().config
+    if language is None:
+        conv_system_message = config.mtbench.conv_system_message
+        conv_roles = config.mtbench.conv_roles
+    elif language == "ja":
+        conv_system_message = config.mtbench.ja.conv_system_message
+        conv_roles = config.mtbench.ja.conv_roles
+    elif language == "en":
+        conv_system_message = config.mtbench.en.conv_system_message
+        conv_roles = config.mtbench.en.conv_roles
     register_conv_template(
         Conversation(
             name=config.mtbench.conv_name,
-            system_message=config.mtbench.conv_system_message,
-            roles=eval(config.mtbench.conv_roles),
+            system_message=conv_system_message,
+            roles=eval(conv_roles),
             sep_style=SeparatorStyle.CUSTOM,
             sep=config.mtbench.conv_sep,
             stop_token_ids=eval(config.mtbench.conv_stop_token_ids),
             stop_str=config.mtbench.conv_stop_str,
-        )
+        ),
+        override=True
     )
 
 # CatPPT template

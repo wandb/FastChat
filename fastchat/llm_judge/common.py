@@ -415,7 +415,7 @@ def play_a_match_pair(match: MatchPair, output_file: str):
             fout.write(json.dumps(result, ensure_ascii=False) + "\n")
 
     return result
-    
+
 def setup_openai_api(model: str, use_azure=False):
     from functools import partial
 
@@ -572,7 +572,7 @@ def chat_completion_gemini(chat_state, model, conv, temperature, max_tokens):
                             { "category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
                         ]
 
-    assert model == "gemini-pro"
+    assert (model == "gemini-pro") | (model == "gemini-1.0-pro-001")
 
     if chat_state is None:
         gemini = genai.GenerativeModel(
