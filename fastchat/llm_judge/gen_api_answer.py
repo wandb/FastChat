@@ -30,6 +30,8 @@ from fastchat.llm_judge.common import (
 from fastchat.llm_judge.gen_model_answer import reorg_answer_file
 from fastchat.model.model_adapter import get_conversation_template, ANTHROPIC_MODEL_LIST
 
+default_temperature = 0.1
+
 def get_api_answer(question_file, answer_file):
     config = WandbConfigSingleton.get_instance().config
     questions = load_questions(question_file, None, None)
@@ -59,7 +61,8 @@ def get_answer(
 ):
 
     config = WandbConfigSingleton.get_instance().config
-    temperature = config.generator.temperature
+    temperature = default_temperature
+    # temperature = config.generator.temperature
 
     choices = []
     chat_state = None  # for palm-2, gemini and bedrock-claude model
