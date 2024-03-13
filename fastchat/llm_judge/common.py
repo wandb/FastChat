@@ -423,6 +423,8 @@ def setup_openai_api(model: str, use_azure=False):
         deployment_id = "misc-35"
     elif model == "gpt-4":
         deployment_id = "misc-4"
+    elif model == "gpt-4-0125-preview":
+        deployment_id = "misc-4"  
     else:
         raise NotImplementedError(f"{model=}")
 
