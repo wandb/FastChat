@@ -437,12 +437,12 @@ def setup_openai_api(model: str, use_azure=False):
         openai.api_key = os.environ['OPENAI_API_KEY']
         return openai.ChatCompletion.create
 
-def chat_completion_azure_fallback(model, conv, temp, max_tokens):
+def chat_completion_azure_fallback(model, conv, temperature, max_tokens):
     """Use the Azure OpenAI API if env vars are set, otherwise use OpenAI directly."""
     if "AZURE_OPENAI_ENDPOINT" in os.environ:
-        return chat_completion_openai_azure(model, conv, temp, max_tokens)
+        return chat_completion_openai_azure(model, conv, temperature, max_tokens)
     else:
-        return chat_completion_openai(model, conv, temp, max_tokens)
+        return chat_completion_openai(model, conv, temperature, max_tokens)
 
 def chat_completion_openai(model, conv, temperature, max_tokens):
     openai_chat_completion_func = setup_openai_api(model)
@@ -516,7 +516,7 @@ def chat_completion_anthropic(model, conv, temperature, max_tokens, api_dict=Non
             while retry_count < max_retries:
                 try:
                     output = llm.invoke(prompt).content
-                    print(oupput)
+                    # print(output)
                     time.sleep(60)
                     break 
                 except Exception as e:
