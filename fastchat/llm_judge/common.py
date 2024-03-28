@@ -632,8 +632,11 @@ def chat_completion_bedrock(chat_state, model, conv, temperature, max_tokens):
     )
 
     if chat_state is None:
+        import boto3
+        boto3_bedrock = boto3.client('bedrock-runtime')
         llm = BedrockChat(
             model_id=model,
+            client=boto3_bedrock,
             model_kwargs={"temperature":temperature, "max_tokens_to_sample": max_tokens},
         )
 
