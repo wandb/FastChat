@@ -622,7 +622,7 @@ def chat_completion_gemini(chat_state, model, conv, temperature, max_tokens):
 
 
 def chat_completion_bedrock(chat_state, model, conv, temperature, max_tokens):
-    from langchain.chat_models import BedrockChat
+    from langchain_community.chat_models import BedrockChat
     from langchain.chains import ConversationChain
     from langchain.memory import ConversationBufferMemory
     from langchain.prompts.chat import (
