@@ -622,7 +622,7 @@ def chat_completion_gemini(chat_state, model, conv, temperature, max_tokens):
 
 
 def chat_completion_bedrock(chat_state, model, conv, temperature, max_tokens):
-    from langchain_community.chat_models import BedrockChat
+    from langchain.chat_models import BedrockChat
     from langchain.chains import ConversationChain
     from langchain.memory import ConversationBufferMemory
     from langchain.prompts.chat import (
@@ -632,11 +632,8 @@ def chat_completion_bedrock(chat_state, model, conv, temperature, max_tokens):
     )
 
     if chat_state is None:
-        import boto3
-        boto3_bedrock = boto3.client('bedrock-runtime')
         llm = BedrockChat(
             model_id=model,
-            client=boto3_bedrock,
             model_kwargs={"temperature":temperature, "max_tokens_to_sample": max_tokens},
         )
 
