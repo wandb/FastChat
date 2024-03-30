@@ -6,8 +6,6 @@ For more details, see the following:
 
 - [fastchat/llm_judge/data/japanese_mt_bench](https://github.com/wandb/FastChat/tree/main/fastchat/llm_judge/data/japanese_mt_bench), which contains Japanese MT-Bench questions, model answers, and judgements
 - [fastchat/llm_judge/data/korean_mt_bench](https://github.com/wandb/FastChat/tree/main/fastchat/llm_judge/data/korean_mt_bench), which contains Korean MT-Bench questions, model answers, and judgements
-- [fastchat/llm_judge/README.md](https://github.com/wandb/FastChat/blob/japanese/fastchat/llm_judge/README.md) for how to generate model answers and judgements for Japanese
-- [fastchat/llm_judge/README.md](https://github.com/wandb/FastChat/blob/korean/fastchat/llm_judge/README.md) for how to generate model answers and judgements for Korean
 
 
 # FastChat
