@@ -14,7 +14,6 @@ from typing import Optional
 import openai
 import anthropic
 import cohere
-from langchain_anthropic import ChatAnthropic
 import google.generativeai as genai
 
 from fastchat.model.model_adapter import (
@@ -173,7 +172,7 @@ def run_judge_single(question, answer, judge, ref_answer, multi_turn=False):
         judgment = chat_completion_azure_fallback(model, conv, temperature=0, max_tokens=2048)
     elif model in ANTHROPIC_MODEL_LIST:
         judgment = chat_completion_anthropic(
-            model, conv, temp=0, max_tokens=1024
+            model, conv, temperature=0, max_tokens=1024
         )
     else:
         raise ValueError(f"Invalid judge model name: {model}")
@@ -507,40 +506,22 @@ def chat_completion_anthropic(model, conv, temperature, max_tokens, api_dict=Non
 
     output = API_ERROR_OUTPUT
     for _ in range(API_MAX_RETRY):
-        if model == "claude-3-opus-20240229":
-            llm = ChatAnthropic(model_name=model)
-            max_retries = 3
-            retry_count = 0
+        try:
+            c = anthropic.Anthropic(api_key=api_key)
             prompt = conv.get_prompt()
-            print(prompt)
-            while retry_count < max_retries:
-                try:
-                    output = llm.invoke(prompt).content
-                    # print(output)
-                    time.sleep(60)
-                    break 
-                except Exception as e:
-                    print(f"Error happened!!! : {e}")
-                    retry_count += 1
-                    time.sleep(1)
-        else:
-            try:
-                c = anthropic.Anthropic(api_key=api_key)
-                prompt = conv.get_prompt()
-                response = c.completions.create(
-                    model=model,
-                    prompt=prompt,
-                    stop_sequences=[anthropic.HUMAN_PROMPT],
-                    max_tokens_to_sample=max_tokens,
-                    temperature=temperature,
-                )
-                output = response.completion
-                break
-            except anthropic.APIError as e:
-                print(type(e), e)
-                time.sleep(API_RETRY_SLEEP)
+            response = c.completions.create(
+                model=model,
+                prompt=prompt,
+                stop_sequences=[anthropic.HUMAN_PROMPT],
+                max_tokens_to_sample=max_tokens,
+                temperature=temperature,
+            )
+            output = response.completion
+            break
+        except anthropic.APIError as e:
+            print(type(e), e)
+            time.sleep(API_RETRY_SLEEP)
     return output.strip()
-
 
 def chat_completion_cohere(model, conv, temperature, max_tokens):
     output = API_ERROR_OUTPUT
@@ -622,7 +603,7 @@ def chat_completion_gemini(chat_state, model, conv, temperature, max_tokens):
 
 
 def chat_completion_bedrock(chat_state, model, conv, temperature, max_tokens):
-    from langchain.chat_models import BedrockChat
+    from langchain_community.chat_models import BedrockChat
     from langchain.chains import ConversationChain
     from langchain.memory import ConversationBufferMemory
     from langchain.prompts.chat import (
@@ -634,7 +615,7 @@ def chat_completion_bedrock(chat_state, model, conv, temperature, max_tokens):
     if chat_state is None:
         llm = BedrockChat(
             model_id=model,
-            model_kwargs={"temperature":temperature, "max_tokens_to_sample": max_tokens},
+            model_kwargs={"temperature":temperature},
         )
 
         memory = ConversationBufferMemory(return_messages=True)
