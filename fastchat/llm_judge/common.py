@@ -137,7 +137,7 @@ def load_judge_prompts(prompt_file: str):
     return prompts
 
 
-def run_judge_single(question, answer, judge, ref_answer, multi_turn=False):
+def run_judge_single(question, answer, judge, ref_answer, multi_turn=False, use_azure=False):
     kwargs = {}
     model = judge.model_name
     if ref_answer is not None:
@@ -168,7 +168,9 @@ def run_judge_single(question, answer, judge, ref_answer, multi_turn=False):
     conv.append_message(conv.roles[0], user_prompt)
     conv.append_message(conv.roles[1], None)
 
-    if model in OPENAI_MODEL_LIST:
+    if use_azure:
+        judgment = chat_completion_openai_azure(model, conv, temperature=0, max_tokens=2048)
+    elif model in OPENAI_MODEL_LIST:
         judgment = chat_completion_openai(model, conv, temperature=0, max_tokens=2048)
     elif model in ANTHROPIC_MODEL_LIST:
         judgment = chat_completion_anthropic(
@@ -194,7 +196,7 @@ def run_judge_single(question, answer, judge, ref_answer, multi_turn=False):
     return rating, user_prompt, judgment
 
 
-def play_a_match_single(match: MatchSingle, output_file: str):
+def play_a_match_single(match: MatchSingle, output_file: str, use_azure=False):
     question, model, answer, judge, ref_answer, multi_turn = (
         match.question,
         match.model,
@@ -206,7 +208,7 @@ def play_a_match_single(match: MatchSingle, output_file: str):
 
     if judge.prompt_template["type"] == "single":
         score, user_prompt, judgment = run_judge_single(
-            question, answer, judge, ref_answer, multi_turn=multi_turn
+            question, answer, judge, ref_answer, multi_turn=multi_turn, use_azure=use_azure
         )
 
         question_id = question["question_id"]
@@ -241,7 +243,7 @@ def play_a_match_single(match: MatchSingle, output_file: str):
     return result
 
 
-def run_judge_pair(question, answer_a, answer_b, judge, ref_answer, multi_turn=False):
+def run_judge_pair(question, answer_a, answer_b, judge, ref_answer, multi_turn=False, use_azure=False):
     kwargs = {}
     model = judge.model_name
     if ref_answer is not None:
@@ -275,7 +277,9 @@ def run_judge_pair(question, answer_a, answer_b, judge, ref_answer, multi_turn=F
     conv.append_message(conv.roles[0], user_prompt)
     conv.append_message(conv.roles[1], None)
 
-    if model in OPENAI_MODEL_LIST:
+    if use_azure:
+        judgment = chat_completion_openai_azure(model, conv, temperature=0, max_tokens=2048)
+    elif model in OPENAI_MODEL_LIST:
         conv.set_system_message(system_prompt)
         judgment = chat_completion_openai(model, conv, temperature=0, max_tokens=2048)
     elif model in ANTHROPIC_MODEL_LIST:
@@ -319,7 +323,7 @@ def run_judge_pair(question, answer_a, answer_b, judge, ref_answer, multi_turn=F
     return winner, user_prompt, judgment
 
 
-def play_a_match_pair(match: MatchPair, output_file: str):
+def play_a_match_pair(match: MatchPair, output_file: str, use_azure=False):
     question, model_1, model_2, answer_1, answer_2, judge, ref_answer, multi_turn = (
         match.question,
         match.model_1,
@@ -333,10 +337,10 @@ def play_a_match_pair(match: MatchPair, output_file: str):
 
     if judge.prompt_template["type"] == "pairwise":
         g1_winner, g1_user_prompt, g1_judgment = run_judge_pair(
-            question, answer_1, answer_2, judge, ref_answer, multi_turn=multi_turn
+            question, answer_1, answer_2, judge, ref_answer, multi_turn=multi_turn, use_azure=use_azure
         )
         g2_winner, g2_user_prompt, g2_judgment = run_judge_pair(
-            question, answer_2, answer_1, judge, ref_answer, multi_turn=multi_turn
+            question, answer_2, answer_1, judge, ref_answer, multi_turn=multi_turn, use_azure=use_azure
         )
 
         g1_map = {"A": "model_1", "B": "model_2"}
@@ -368,10 +372,10 @@ def play_a_match_pair(match: MatchPair, output_file: str):
         )
     elif judge.prompt_template["type"] == "single":
         m1_score, m1_user_prompt, m1_judgment = run_judge_single(
-            question, answer_1, judge
+            question, answer_1, judge, use_azure=use_azure,
         )
         m2_score, m2_user_prompt, m2_judgment = run_judge_single(
-            question, answer_2, judge
+            question, answer_2, judge, use_azure=use_azure,
         )
 
         if abs(m1_score - m2_score) <= TIE_DELTA:
