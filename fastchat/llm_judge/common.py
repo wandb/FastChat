@@ -506,18 +506,35 @@ def chat_completion_anthropic(model, conv, temperature, max_tokens, api_dict=Non
 
     output = API_ERROR_OUTPUT
     for _ in range(API_MAX_RETRY):
-        try:
-            c = anthropic.Anthropic(api_key=api_key)
+        if model == "claude-3-opus-20240229":
+            llm = ChatAnthropic(model_name=model)
+            max_retries = 3
+            retry_count = 0
             prompt = conv.get_prompt()
-            response = c.completions.create(
-                model=model,
-                prompt=prompt,
-                stop_sequences=[anthropic.HUMAN_PROMPT],
-                max_tokens_to_sample=max_tokens,
-                temperature=temperature,
-            )
-            output = response.completion
-            break
+            print(prompt)
+            while retry_count < max_retries:
+                try:
+                    output = llm.invoke(prompt).content
+                    # print(output)
+                    time.sleep(60)
+                    break 
+                except Exception as e:
+                    print(f"Error happened!!! : {e}")
+                    retry_count += 1
+                    time.sleep(1)
+        else:
+            try:
+                c = anthropic.Anthropic(api_key=api_key)
+                prompt = conv.get_prompt()
+                response = c.completions.create(
+                    model=model,
+                    prompt=prompt,
+                    stop_sequences=[anthropic.HUMAN_PROMPT],
+                    max_tokens_to_sample=max_tokens,
+                    temperature=temperature,
+                )
+                output = response.completion
+                break
         except anthropic.APIError as e:
             print(type(e), e)
             time.sleep(API_RETRY_SLEEP)
