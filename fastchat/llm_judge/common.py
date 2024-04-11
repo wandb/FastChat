@@ -535,9 +535,9 @@ def chat_completion_anthropic(model, conv, temperature, max_tokens, api_dict=Non
                 )
                 output = response.completion
                 break
-        except anthropic.APIError as e:
-            print(type(e), e)
-            time.sleep(API_RETRY_SLEEP)
+            except anthropic.APIError as e:
+                print(type(e), e)
+                time.sleep(API_RETRY_SLEEP)
     return output.strip()
 
 def chat_completion_cohere(model, conv, temperature, max_tokens):
