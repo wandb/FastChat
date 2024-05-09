@@ -1761,6 +1761,19 @@ register_conv_template(
     )
 )
 
+# Swallow template
+# reference: https://huggingface.co/tokyotech-llm/Swallow-MS-7b-instruct-v0.1
+register_conv_template(
+    Conversation(
+        name="Swallow",
+        system_template="<s>[INST] <<SYS>>\n{system_message}\n<</SYS>>\n\n",
+        system_message="あなたは誠実で優秀な日本人のアシスタントです。",
+        roles=("[INST]", "[/INST]"),
+        sep_style=SeparatorStyle.LLAMA2,
+        sep=" ",
+        sep2="</s>",
+    )
+)
 
 if __name__ == "__main__":
     from fastchat.conversation import get_conv_template

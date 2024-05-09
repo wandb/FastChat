@@ -1662,6 +1662,21 @@ class JLlama2Adapter(BaseModelAdapter):
                 raise NotImplementedError
         return conv
     
+class SwallowAdapter(BaseModelAdapter):
+    """tokyotech-llm/Swallow-MS-7b-instruct-v0.1"""
+    tokenizer_path: str = None
+
+    def match(self, model_path: str):
+        return "Swallow" in model_path.lower()
+
+    def load_model(self, model_path: str, from_pretrained_kwargs: dict):
+        model, tokenizer = super().load_model(model_path, from_pretrained_kwargs)
+        model.config.eos_token_id = tokenizer.eos_token_id
+        model.config.pad_token_id = tokenizer.pad_token_id
+        return model, tokenizer
+
+    def get_default_conv_template(self, model_path: str) -> Conversation:
+        return get_conv_template("Swallow")
 
 class CuteGPTAdapter(BaseModelAdapter):
     """The model adapter for CuteGPT"""
@@ -2453,6 +2468,7 @@ class YuanAdapter(BaseModelAdapter):
 # Note: the registration order matters.
 # The one registered earlier has a higher matching priority.
 register_model_adapter(CustomAdapter)  # ←追加
+register_model_adapter(SwallowAdapter)
 register_model_adapter(JLlama2Adapter)
 register_model_adapter(JSLMAlphaAdapter)
 register_model_adapter(PeftModelAdapter)
