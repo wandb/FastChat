@@ -16,7 +16,7 @@ from tqdm import tqdm
 from fastchat.llm_judge.common import load_questions, temperature_config
 from fastchat.model import load_model, get_conversation_template
 from fastchat.utils import str_to_torch_dtype
-
+from config_singleton import WandbConfigSingleton
 
 def run_eval(
     model_path,
@@ -94,6 +94,12 @@ def get_model_answers(
         cpu_offloading=False,
         debug=False,
     )
+
+    cfg = WandbConfigSingleton.get_instance().config
+    use_tokenizer_eos = getattr(cfg.mtbench, 'use_tokenizer_eos', False)
+    if use_tokenizer_eos:
+        model.config.eos_token_id = tokenizer.eos_token_id
+        model.config.pad_token_id = tokenizer.pad_token_id
 
     for question in tqdm(questions):
         if question["category"] in temperature_config:
