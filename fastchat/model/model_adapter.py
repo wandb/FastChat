@@ -2465,9 +2465,25 @@ class YuanAdapter(BaseModelAdapter):
         return get_conv_template("yuan")
 
 
+class LlmjpAdapter(BaseModelAdapter):
+    """The model adapter for llm-jp models"""
+    tokenizer_path: str = None
+
+    def match(self, model_path: str):
+        return "llm-jp" in model_path.lower()
+
+    def load_model(self, model_path: str, from_pretrained_kwargs: dict):
+        model, tokenizer = super().load_model(model_path, from_pretrained_kwargs)
+        return model, tokenizer
+
+    def get_default_conv_template(self, model_path: str) -> Conversation:
+        return get_conv_template("llm-jp")
+
+
 # Note: the registration order matters.
 # The one registered earlier has a higher matching priority.
 register_model_adapter(CustomAdapter)  # ←追加
+register_model_adapter(LlmjpAdapter)
 register_model_adapter(SwallowAdapter)
 register_model_adapter(JLlama2Adapter)
 register_model_adapter(JSLMAlphaAdapter)

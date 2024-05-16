@@ -39,6 +39,7 @@ class SeparatorStyle(IntEnum):
     METAMATH = auto()
     JSLM_ALPHA = auto()
     YUAN2 = auto()
+    LLMJP = auto()
 
 
 IMAGE_PLACEHOLDER_STR = "$$<image>$$"
@@ -371,6 +372,14 @@ class Conversation:
                 else:
                     ret += ""
             ret = ret.rstrip("<n>") + seps[0]
+            return ret
+        elif self.sep_style == SeparatorStyle.LLMJP:         
+            ret = system_prompt
+            for i, (role, message) in enumerate(self.messages):
+                if message:
+                    ret += self.sep + role + ":\n" + message
+                else:
+                    ret += self.sep + role + ":\n"
             return ret
         else:
             raise ValueError(f"Invalid style: {self.sep_style}")
@@ -1772,6 +1781,21 @@ register_conv_template(
         sep_style=SeparatorStyle.LLAMA2,
         sep=" ",
         sep2="</s>",
+    )
+)
+
+# llm-jp template
+# reference: https://huggingface.co/llm-jp/llm-jp-13b-instruct-full-ac_001_16x-dolly-ichikara_004_001_single-oasst-oasst2-v2.0
+register_conv_template(
+    Conversation(
+        name="llm-jp",
+        system_template="{system_message}",
+        system_message="以下は、タスクを説明する指示です。要求を適切に満たす応答を書きなさい。",
+        roles=("指示", "応答"),
+        sep_style=SeparatorStyle.LLMJP,
+        sep="\n\n### ",
+        stop_token_ids=[7],
+        stop_str="<EOD|LLM-jp>",
     )
 )
 
