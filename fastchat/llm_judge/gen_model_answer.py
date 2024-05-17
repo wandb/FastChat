@@ -112,6 +112,8 @@ def get_model_answers(
                 conv.append_message(conv.roles[1], None)
                 prompt = conv.get_prompt()
                 input_ids = tokenizer([prompt]).input_ids
+                if conv.name == 'llm-jp' and input_ids[0][-1] in conv.stop_token_ids:
+                    input_ids[0] = input_ids[0][:-1]
 
                 if temperature < 1e-4:
                     do_sample = False
