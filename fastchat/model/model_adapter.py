@@ -2470,7 +2470,7 @@ class LlmjpAdapter(BaseModelAdapter):
     tokenizer_path: str = None
 
     def match(self, model_path: str):
-        return "llm-jp" in model_path.lower()
+        return "llm-jp" in model_path.lower() and ("v2.0" in model_path.lower() or "v1.1" in model_path.lower())
 
     def load_model(self, model_path: str, from_pretrained_kwargs: dict):
         model, tokenizer = super().load_model(model_path, from_pretrained_kwargs)
