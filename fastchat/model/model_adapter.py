@@ -1261,6 +1261,19 @@ class BedrockAdapter(BaseModelAdapter):
     def get_default_conv_template(self, model_path: str) -> Conversation:
         return get_conv_template("gemini")
 
+class vLLMAdapter(BaseModelAdapter):
+    """The model adapter for Claude in Amaon Bedrock"""
+
+    def match(self, model_path: str):
+        config = WandbConfigSingleton.get_instance().config
+        return config.api == "vllm"
+
+    def load_model(self, model_path: str, from_pretrained_kwargs: dict):
+        raise NotImplementedError()
+
+    def get_default_conv_template(self, model_path: str) -> Conversation:
+        return get_conv_template("chatgpt")
+
 class MistralAPIAdapter(BaseModelAdapter):
     """The model adapter for Mistral API"""
 
@@ -2507,6 +2520,7 @@ register_model_adapter(BaizeAdapter)
 register_model_adapter(RwkvAdapter)
 register_model_adapter(OpenBuddyAdapter)
 register_model_adapter(PhoenixAdapter)
+register_model_adapter(vLLMAdapter)
 register_model_adapter(GeminiAdapter)
 register_model_adapter(BardAdapter)
 register_model_adapter(PaLM2Adapter)

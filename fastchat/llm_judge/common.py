@@ -434,7 +434,7 @@ def setup_openai_api(model: str, use_azure=False):
         return partial(openai.ChatCompletion.create, deployment_id=deployment_id)
     else:
         openai.api_key = os.environ['OPENAI_API_KEY']
-        return openai.ChatCompletion.create
+        return openai.chat.completions.create
 
 def chat_completion_azure_fallback(model, conv, temperature, max_tokens):
     """Use the Azure OpenAI API if env vars are set, otherwise use OpenAI directly."""
@@ -443,28 +443,61 @@ def chat_completion_azure_fallback(model, conv, temperature, max_tokens):
     else:
         return chat_completion_openai(model, conv, temperature, max_tokens)
 
+import openai
+import time
+
+import openai
+import time
+
 def chat_completion_openai(model, conv, temperature, max_tokens):
-    openai_chat_completion_func = setup_openai_api(model)
+    #openai_chat_completion_func = setup_openai_api(model)
     output = API_ERROR_OUTPUT
     # TODO: allow additional params for toggling between azure api
     for _ in range(API_MAX_RETRY):
         try:
             messages = conv.to_openai_api_messages()
-            response = openai_chat_completion_func(
+            response = openai.chat.completions.create(
                 model=model,
                 messages=messages,
                 n=1,
                 temperature=temperature,
                 max_tokens=max_tokens,
             )
-            output = response["choices"][0]["message"]["content"]
+            output = response.choices[0].message.content
             break
-        except openai.error.OpenAIError as e:
+        except openai.OpenAIError as e:
             print(type(e), e)
             time.sleep(API_RETRY_SLEEP)
 
     return output
 
+def chat_completion_vllm(model, conv, temperature, max_tokens):
+    from openai import OpenAI
+
+    # Modify OpenAI's API key and API base to use vLLM's API server.
+    openai_api_key = "EMPTY"
+    openai_api_base = "http://0.0.0.0:8000/v1"
+    client = OpenAI(
+        api_key=openai_api_key,
+        base_url=openai_api_base,
+    )
+    output = API_ERROR_OUTPUT
+    for _ in range(API_MAX_RETRY):
+        try:
+            messages = conv.to_openai_api_messages()
+            response = client.chat.completions.create(
+                model=model,
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=temperature,
+            )
+            output = response.choices[0].message.content
+            break
+        except Exception as e:  # 修正: openai.error.OpenAIError から Exception へ
+            print(type(e), e)
+            time.sleep(API_RETRY_SLEEP)
+
+    return output
 
 def chat_completion_openai_azure(model, conv, temperature, max_tokens, api_dict=None):
     openai.api_type = "azure"
