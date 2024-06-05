@@ -80,7 +80,7 @@ def get_answer(
                 chat_state, output = chat_completion_palm(
                     chat_state, model, conv, temperature, max_tokens
                 )
-            elif model == "solar-1-mini-chat-ja":
+            elif config.api == "upstage":
                 output = chat_completion_upstage(
                     model, conv
                 )
