@@ -11,6 +11,7 @@ import re
 import time
 from typing import Optional
 
+from openai import OpenAI
 import openai
 import anthropic
 import cohere
@@ -447,20 +448,25 @@ def chat_completion_azure_fallback(model, conv, temperature, max_tokens):
         return chat_completion_openai(model, conv, temperature, max_tokens)
 
 def chat_completion_openai(model, conv, temperature, max_tokens):
-    openai_chat_completion_func = setup_openai_api(model)
+    #if openai=0.28
+    # openai_chat_completion_func = setup_openai_api(model)
+    #if openai=0.31
+    client=OpenAI()
     output = API_ERROR_OUTPUT
     # TODO: allow additional params for toggling between azure api
     for _ in range(API_MAX_RETRY):
         try:
             messages = conv.to_openai_api_messages()
-            response = openai_chat_completion_func(
+            #response = openai_chat_completion_func(
+            response = client.chat.completions.create(
                 model=model,
                 messages=messages,
-                n=1,
-                temperature=temperature,
-                max_tokens=max_tokens,
+                #n=1,
+                #temperature=temperature,
+                #max_tokens=max_tokens,
             )
-            output = response["choices"][0]["message"]["content"]
+            #output = response["choices"][0]["message"]["content"]
+            output = response.choices[0].message.content
             break
         except openai.error.OpenAIError as e:
             print(type(e), e)
