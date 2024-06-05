@@ -15,6 +15,9 @@ import openai
 import anthropic
 import cohere
 import google.generativeai as genai
+from langchain_upstage import ChatUpstage
+from langchain_core.messages import HumanMessage, SystemMessage
+
 
 from fastchat.model.model_adapter import (
     get_conversation_template,
@@ -559,6 +562,34 @@ def chat_completion_cohere(model, conv, temperature, max_tokens):
             time.sleep(API_RETRY_SLEEP)
     return output.strip()
 
+def convert_to_langchain_messages(openai_messages):
+    langchain_messages = []
+    for msg in openai_messages:
+        if msg['role'] == 'system':
+            langchain_messages.append(SystemMessage(content=msg['content']))
+        elif msg['role'] == 'user':
+            langchain_messages.append(HumanMessage(content=msg['content']))
+        elif msg['role'] == 'assistant':
+            langchain_messages.append(HumanMessage(content=msg['content']))
+    return langchain_messages
+
+
+def chat_completion_upstage(model, conv):
+    response = API_ERROR_OUTPUT
+    for _ in range(API_MAX_RETRY):
+        try:
+            openai_api_messages = conv.to_openai_api_messages()
+            messages = convert_to_langchain_messages(openai_api_messages)
+            print(messages)
+            chat = ChatUpstage(model_name=model)
+            response = chat.invoke(messages).content
+            print(response)
+            time.sleep(20)
+            break
+        except openai.error.OpenAIError as e:
+            print(type(e), e)
+            time.sleep(API_RETRY_SLEEP)
+    return response.strip()
 
 def chat_completion_palm(chat_state, model, conv, temperature, max_tokens):
     from fastchat.serve.api_provider import init_palm_chat
