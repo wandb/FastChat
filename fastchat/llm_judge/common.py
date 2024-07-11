@@ -11,14 +11,10 @@ import re
 import time
 from typing import Optional
 
-from openai import OpenAI
 import openai
 import anthropic
 import cohere
 import google.generativeai as genai
-from langchain_upstage import ChatUpstage
-from langchain_core.messages import HumanMessage, SystemMessage
-
 
 from fastchat.model.model_adapter import (
     get_conversation_template,
@@ -95,7 +91,7 @@ class MatchPair:
 def load_questions(question_file: str, begin: Optional[int], end: Optional[int]):
     """Load questions from a file."""
     questions = []
-    with open(question_file, "r") as ques_file:
+    with open(question_file, "r", encoding="utf-8") as ques_file:
         for line in ques_file:
             if line:
                 q = json.loads(line)
@@ -118,7 +114,7 @@ def load_model_answers(answer_dir: str):
     for filename in filenames:
         model_name = os.path.basename(filename)[:-6]
         answer = {}
-        with open(filename) as fin:
+        with open(filename, "r", encoding="utf-8") as fin:
             for line in fin:
                 line = json.loads(line)
                 answer[int(line["question_id"])] = line
@@ -134,14 +130,14 @@ def load_judge_prompts(prompt_file: str):
     Dict[judge_name: str -> dict]
     """
     prompts = {}
-    with open(prompt_file) as fin:
+    with open(prompt_file, "r", encoding="utf-8") as fin:
         for line in fin:
             line = json.loads(line)
             prompts[line["name"]] = line
     return prompts
 
 
-def run_judge_single(question, answer, judge, ref_answer, multi_turn=False):
+def run_judge_single(question, answer, judge, ref_answer, multi_turn=False, use_azure=False):
     kwargs = {}
     model = judge.model_name
     if ref_answer is not None:
@@ -172,8 +168,10 @@ def run_judge_single(question, answer, judge, ref_answer, multi_turn=False):
     conv.append_message(conv.roles[0], user_prompt)
     conv.append_message(conv.roles[1], None)
 
-    if model in OPENAI_MODEL_LIST:
-        judgment = chat_completion_azure_fallback(model, conv, temperature=0, max_tokens=2048)
+    if use_azure:
+        judgment = chat_completion_openai_azure(model, conv, temperature=0, max_tokens=2048)
+    elif model in OPENAI_MODEL_LIST:
+        judgment = chat_completion_openai(model, conv, temperature=0, max_tokens=2048)
     elif model in ANTHROPIC_MODEL_LIST:
         judgment = chat_completion_anthropic(
             model, conv, temperature=0, max_tokens=1024
@@ -181,7 +179,7 @@ def run_judge_single(question, answer, judge, ref_answer, multi_turn=False):
     else:
         raise ValueError(f"Invalid judge model name: {model}")
 
-    if judge.prompt_template["output_format"] in ["[[rating]]", "[[評価]]", "[[평가]]"]:
+    if judge.prompt_template["output_format"] in ["[[rating]]", "[[評価]]"]:
         match = re.search(one_score_pattern, judgment)
         if not match:
             match = re.search(one_score_pattern_backup, judgment)
@@ -198,7 +196,7 @@ def run_judge_single(question, answer, judge, ref_answer, multi_turn=False):
     return rating, user_prompt, judgment
 
 
-def play_a_match_single(match: MatchSingle, output_file: str):
+def play_a_match_single(match: MatchSingle, output_file: str, use_azure=False):
     question, model, answer, judge, ref_answer, multi_turn = (
         match.question,
         match.model,
@@ -210,7 +208,7 @@ def play_a_match_single(match: MatchSingle, output_file: str):
 
     if judge.prompt_template["type"] == "single":
         score, user_prompt, judgment = run_judge_single(
-            question, answer, judge, ref_answer, multi_turn=multi_turn
+            question, answer, judge, ref_answer, multi_turn=multi_turn, use_azure=use_azure
         )
 
         question_id = question["question_id"]
@@ -239,13 +237,13 @@ def play_a_match_single(match: MatchSingle, output_file: str):
             f"{model}__{turn}turn.jsonl"
         )
         os.makedirs(os.path.dirname(output_file), exist_ok=True)
-        with open(output_file, "a") as fout:
+        with open(output_file, "a", encoding="utf-8") as fout:
             fout.write(json.dumps(result, ensure_ascii=False) + "\n")
 
     return result
 
 
-def run_judge_pair(question, answer_a, answer_b, judge, ref_answer, multi_turn=False):
+def run_judge_pair(question, answer_a, answer_b, judge, ref_answer, multi_turn=False, use_azure=False):
     kwargs = {}
     model = judge.model_name
     if ref_answer is not None:
@@ -279,7 +277,9 @@ def run_judge_pair(question, answer_a, answer_b, judge, ref_answer, multi_turn=F
     conv.append_message(conv.roles[0], user_prompt)
     conv.append_message(conv.roles[1], None)
 
-    if model in OPENAI_MODEL_LIST:
+    if use_azure:
+        judgment = chat_completion_openai_azure(model, conv, temperature=0, max_tokens=2048)
+    elif model in OPENAI_MODEL_LIST:
         conv.set_system_message(system_prompt)
         judgment = chat_completion_openai(model, conv, temperature=0, max_tokens=2048)
     elif model in ANTHROPIC_MODEL_LIST:
@@ -323,7 +323,7 @@ def run_judge_pair(question, answer_a, answer_b, judge, ref_answer, multi_turn=F
     return winner, user_prompt, judgment
 
 
-def play_a_match_pair(match: MatchPair, output_file: str):
+def play_a_match_pair(match: MatchPair, output_file: str, use_azure=False):
     question, model_1, model_2, answer_1, answer_2, judge, ref_answer, multi_turn = (
         match.question,
         match.model_1,
@@ -337,10 +337,10 @@ def play_a_match_pair(match: MatchPair, output_file: str):
 
     if judge.prompt_template["type"] == "pairwise":
         g1_winner, g1_user_prompt, g1_judgment = run_judge_pair(
-            question, answer_1, answer_2, judge, ref_answer, multi_turn=multi_turn
+            question, answer_1, answer_2, judge, ref_answer, multi_turn=multi_turn, use_azure=use_azure
         )
         g2_winner, g2_user_prompt, g2_judgment = run_judge_pair(
-            question, answer_2, answer_1, judge, ref_answer, multi_turn=multi_turn
+            question, answer_2, answer_1, judge, ref_answer, multi_turn=multi_turn, use_azure=use_azure
         )
 
         g1_map = {"A": "model_1", "B": "model_2"}
@@ -372,10 +372,10 @@ def play_a_match_pair(match: MatchPair, output_file: str):
         )
     elif judge.prompt_template["type"] == "single":
         m1_score, m1_user_prompt, m1_judgment = run_judge_single(
-            question, answer_1, judge
+            question, answer_1, judge, use_azure=use_azure,
         )
         m2_score, m2_user_prompt, m2_judgment = run_judge_single(
-            question, answer_2, judge
+            question, answer_2, judge, use_azure=use_azure,
         )
 
         if abs(m1_score - m2_score) <= TIE_DELTA:
@@ -415,11 +415,11 @@ def play_a_match_pair(match: MatchPair, output_file: str):
             f"{model_1}__{model_2}__{turn}turn.jsonl"
         )
         os.makedirs(os.path.dirname(output_file), exist_ok=True)
-        with open(output_file, "a") as fout:
+        with open(output_file, "a", encoding="utf-8") as fout:
             fout.write(json.dumps(result, ensure_ascii=False) + "\n")
 
     return result
-    
+
 def setup_openai_api(model: str, use_azure=False):
     from functools import partial
 
@@ -427,6 +427,8 @@ def setup_openai_api(model: str, use_azure=False):
         deployment_id = "misc-35"
     elif model == "gpt-4":
         deployment_id = "misc-4"
+    elif model == "gpt-4-0125-preview":
+        deployment_id = "misc-4"  
     else:
         raise NotImplementedError(f"{model=}")
 
@@ -440,33 +442,22 @@ def setup_openai_api(model: str, use_azure=False):
         openai.api_key = os.environ['OPENAI_API_KEY']
         return openai.ChatCompletion.create
 
-def chat_completion_azure_fallback(model, conv, temperature, max_tokens):
-    """Use the Azure OpenAI API if env vars are set, otherwise use OpenAI directly."""
-    if "AZURE_OPENAI_ENDPOINT" in os.environ:
-        return chat_completion_openai_azure(model, conv, temperature, max_tokens)
-    else:
-        return chat_completion_openai(model, conv, temperature, max_tokens)
 
 def chat_completion_openai(model, conv, temperature, max_tokens):
-    #if openai=0.28
-    # openai_chat_completion_func = setup_openai_api(model)
-    #if openai=0.31
-    client=OpenAI()
+    openai_chat_completion_func = setup_openai_api(model)
     output = API_ERROR_OUTPUT
     # TODO: allow additional params for toggling between azure api
     for _ in range(API_MAX_RETRY):
         try:
             messages = conv.to_openai_api_messages()
-            #response = openai_chat_completion_func(
-            response = client.chat.completions.create(
+            response = openai_chat_completion_func(
                 model=model,
                 messages=messages,
-                #n=1,
-                #temperature=temperature,
-                #max_tokens=max_tokens,
+                n=1,
+                temperature=temperature,
+                max_tokens=max_tokens,
             )
-            #output = response["choices"][0]["message"]["content"]
-            output = response.choices[0].message.content
+            output = response["choices"][0]["message"]["content"]
             break
         except openai.error.OpenAIError as e:
             print(type(e), e)
@@ -515,39 +506,23 @@ def chat_completion_anthropic(model, conv, temperature, max_tokens, api_dict=Non
 
     output = API_ERROR_OUTPUT
     for _ in range(API_MAX_RETRY):
-        if model == "claude-3-opus-20240229":
-            llm = ChatAnthropic(model_name=model)
-            max_retries = 3
-            retry_count = 0
+        try:
+            c = anthropic.Anthropic(api_key=api_key)
             prompt = conv.get_prompt()
-            print(prompt)
-            while retry_count < max_retries:
-                try:
-                    output = llm.invoke(prompt).content
-                    # print(output)
-                    time.sleep(60)
-                    break 
-                except Exception as e:
-                    print(f"Error happened!!! : {e}")
-                    retry_count += 1
-                    time.sleep(1)
-        else:
-            try:
-                c = anthropic.Anthropic(api_key=api_key)
-                prompt = conv.get_prompt()
-                response = c.completions.create(
-                    model=model,
-                    prompt=prompt,
-                    stop_sequences=[anthropic.HUMAN_PROMPT],
-                    max_tokens_to_sample=max_tokens,
-                    temperature=temperature,
-                )
-                output = response.completion
-                break
-            except anthropic.APIError as e:
-                print(type(e), e)
-                time.sleep(API_RETRY_SLEEP)
+            response = c.completions.create(
+                model=model,
+                prompt=prompt,
+                stop_sequences=[anthropic.HUMAN_PROMPT],
+                max_tokens_to_sample=max_tokens,
+                temperature=temperature,
+            )
+            output = response.completion
+            break
+        except anthropic.APIError as e:
+            print(type(e), e)
+            time.sleep(API_RETRY_SLEEP)
     return output.strip()
+
 
 def chat_completion_cohere(model, conv, temperature, max_tokens):
     output = API_ERROR_OUTPUT
@@ -568,34 +543,6 @@ def chat_completion_cohere(model, conv, temperature, max_tokens):
             time.sleep(API_RETRY_SLEEP)
     return output.strip()
 
-def convert_to_langchain_messages(openai_messages):
-    langchain_messages = []
-    for msg in openai_messages:
-        if msg['role'] == 'system':
-            langchain_messages.append(SystemMessage(content=msg['content']))
-        elif msg['role'] == 'user':
-            langchain_messages.append(HumanMessage(content=msg['content']))
-        elif msg['role'] == 'assistant':
-            langchain_messages.append(HumanMessage(content=msg['content']))
-    return langchain_messages
-
-
-def chat_completion_upstage(model, conv):
-    response = API_ERROR_OUTPUT
-    for _ in range(API_MAX_RETRY):
-        try:
-            openai_api_messages = conv.to_openai_api_messages()
-            messages = convert_to_langchain_messages(openai_api_messages)
-            print(messages)
-            chat = ChatUpstage(model_name=model)
-            response = chat.invoke(messages).content
-            print(response)
-            time.sleep(20)
-            break
-        except openai.error.OpenAIError as e:
-            print(type(e), e)
-            time.sleep(API_RETRY_SLEEP)
-    return response.strip()
 
 def chat_completion_palm(chat_state, model, conv, temperature, max_tokens):
     from fastchat.serve.api_provider import init_palm_chat
@@ -631,7 +578,7 @@ def chat_completion_gemini(chat_state, model, conv, temperature, max_tokens):
                             { "category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
                         ]
 
-    assert model == "gemini-pro"
+    assert (model == "gemini-pro") | (model == "gemini-1.0-pro-001")
 
     if chat_state is None:
         gemini = genai.GenerativeModel(
@@ -657,7 +604,7 @@ def chat_completion_gemini(chat_state, model, conv, temperature, max_tokens):
 
 
 def chat_completion_bedrock(chat_state, model, conv, temperature, max_tokens):
-    from langchain_community.chat_models import BedrockChat
+    from langchain.chat_models import BedrockChat
     from langchain.chains import ConversationChain
     from langchain.memory import ConversationBufferMemory
     from langchain.prompts.chat import (
@@ -669,7 +616,7 @@ def chat_completion_bedrock(chat_state, model, conv, temperature, max_tokens):
     if chat_state is None:
         llm = BedrockChat(
             model_id=model,
-            model_kwargs={"temperature":temperature},
+            model_kwargs={"temperature":temperature, "max_tokens_to_sample": max_tokens},
         )
 
         memory = ConversationBufferMemory(return_messages=True)
