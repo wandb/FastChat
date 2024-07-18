@@ -428,7 +428,9 @@ def setup_openai_api(model: str, use_azure=False):
     elif model == "gpt-4":
         deployment_id = "misc-4"
     elif model == "gpt-4-0125-preview":
-        deployment_id = "misc-4"  
+        deployment_id = "misc-4"
+    elif model == "gpt-4o-2024-05-13":
+        deployment_id = "misc-4"
     else:
         raise NotImplementedError(f"{model=}")
 
@@ -873,8 +875,8 @@ def check_data(questions, model_answers, ref_answers, models, judges):
             if q["category"] not in NEED_REF_CATS:
                 continue
             assert (
-                q["question_id"] in ref_answers[jg.model_name]
-            ), f"Missing reference answer to Question {q['question_id']} for judge {jg.model_name}"
+                q["question_id"] in list(ref_answers.values())[0].keys()
+            ), f"Missing reference answer to Question {q['question_id']} for judge {list(ref_answers.keys())[0]}"
 
 
 def get_model_list(answer_dir):
