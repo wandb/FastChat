@@ -429,6 +429,8 @@ def setup_openai_api(model: str, use_azure=False):
         deployment_id = "misc-4"
     elif model == "gpt-4-0125-preview":
         deployment_id = "misc-4"
+    elif model == "gpt-4-0613":
+        deployment_id = "misc-4"
     elif model == "gpt-4o-2024-05-13":
         deployment_id = "misc-4"
     else:
@@ -606,7 +608,7 @@ def chat_completion_gemini(chat_state, model, conv, temperature, max_tokens):
 
 
 def chat_completion_bedrock(chat_state, model, conv, temperature, max_tokens):
-    from langchain.chat_models import BedrockChat
+    from langchain_community.chat_models import BedrockChat
     from langchain.chains import ConversationChain
     from langchain.memory import ConversationBufferMemory
     from langchain.prompts.chat import (
@@ -618,7 +620,7 @@ def chat_completion_bedrock(chat_state, model, conv, temperature, max_tokens):
     if chat_state is None:
         llm = BedrockChat(
             model_id=model,
-            model_kwargs={"temperature":temperature, "max_tokens_to_sample": max_tokens},
+            model_kwargs={"temperature":temperature},
         )
 
         memory = ConversationBufferMemory(return_messages=True)
