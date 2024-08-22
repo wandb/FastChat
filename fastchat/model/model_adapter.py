@@ -6,7 +6,7 @@ import re
 import sys
 from typing import Dict, List, Optional
 import warnings
-from omegaconf import OmegaConf
+# from omegaconf import OmegaConf
 
 if sys.version_info >= (3, 9):
     from functools import cache
@@ -44,9 +44,8 @@ from fastchat.modules.exllama import ExllamaConfig, load_exllama_model
 from fastchat.modules.xfastertransformer import load_xft_model, XftConfig
 from fastchat.modules.gptq import GptqConfig, load_gptq_quantized
 from fastchat.utils import get_gpu_memory
-from config_singleton import WandbConfigSingleton
-
-import wandb
+# from config_singleton import WandbConfigSingleton
+# import wandb
 
 # Check an environment variable to check if we should be sharing Peft model
 # weights.  When false we treat all Peft models as separate.
@@ -79,6 +78,18 @@ OPENAI_MODEL_LIST = (
     "gpt-4-turbo",
     "gpt-4-1106-preview",
     "gpt-4-0125-preview",
+)
+
+COHERE_MODEL_LIST = (
+    "cohere"
+)
+
+AMAZON_MODEL_LIST = (
+    "amazon_bedrock"
+)
+
+MISTRAL_MODEL_LIST = (
+    "mistral"
 )
 
 
@@ -201,7 +212,7 @@ def load_model(
     revision: str = "main",
     debug: bool = False,
 ):
-    cfg = WandbConfigSingleton.get_instance().config
+    # cfg = WandbConfigSingleton.get_instance().config
     """Load a model from Hugging Face."""
     import accelerate
 
@@ -344,9 +355,9 @@ def load_model(
     if dtype is not None:  # Overwrite dtype if it is provided in the arguments.
         kwargs["torch_dtype"] = dtype
 
-    if cfg.model.use_wandb_artifacts==True:
-        kwargs["device_map"] = "auto"
-        print(kwargs) 
+    # if cfg.model.use_wandb_artifacts==True:
+    #     kwargs["device_map"] = "auto"
+    #     print(kwargs) 
 
     if os.environ.get("FASTCHAT_USE_MODELSCOPE", "False").lower() == "true":
         # download model from ModelScope hub,
@@ -372,7 +383,8 @@ def load_model(
     ):
         model = ipex.optimize(model, dtype=kwargs["torch_dtype"])
 
-    if (device == "cuda" and num_gpus == 1 and not cpu_offloading and not cfg.model.use_wandb_artifacts) or device in (
+    # if (device == "cuda" and num_gpus == 1 and not cpu_offloading and not cfg.model.use_wandb_artifacts) or device in (
+    if (device == "cuda" and num_gpus == 1 and not cpu_offloading) or device in (
         "mps",
         "xpu",
         "npu",
@@ -1199,8 +1211,9 @@ class CohereAdapter(BaseModelAdapter):
     """The model adapter for Cohere"""
 
     def match(self, model_path: str):
-        config = WandbConfigSingleton.get_instance().config
-        return config.api == "cohere"
+        # config = WandbConfigSingleton.get_instance().config
+        # return config.api == "cohere"
+        return model_path in COHERE_MODEL_LIST
 
     def load_model(self, model_path: str, from_pretrained_kwargs: dict):
         raise NotImplementedError()
@@ -1252,8 +1265,9 @@ class BedrockAdapter(BaseModelAdapter):
     """The model adapter for Claude in Amaon Bedrock"""
 
     def match(self, model_path: str):
-        config = WandbConfigSingleton.get_instance().config
-        return config.api == "amazon_bedrock"
+        # config = WandbConfigSingleton.get_instance().config
+        # return config.api == "amazon_bedrock"
+        return model_path in AMAZON_MODEL_LIST
 
     def load_model(self, model_path: str, from_pretrained_kwargs: dict):
         raise NotImplementedError()
@@ -1265,8 +1279,9 @@ class MistralAPIAdapter(BaseModelAdapter):
     """The model adapter for Mistral API"""
 
     def match(self, model_path: str):
-        config = WandbConfigSingleton.get_instance().config
-        return config.api == "mistral"
+        # config = WandbConfigSingleton.get_instance().config
+        # return config.api == "mistral"
+        return model_path in MISTRAL_MODEL_LIST
 
     def load_model(self, model_path: str, from_pretrained_kwargs: dict):
         raise NotImplementedError()
@@ -2238,19 +2253,19 @@ class PygmalionAdapter(BaseModelAdapter):
         return get_conv_template("metharme")
     
 
-class CustomAdapter(BaseModelAdapter):  # ←追加
-    """
-    Custom Model adapter
-    """
-    model_variation = None
+# class CustomAdapter(BaseModelAdapter):  # ←追加
+#     """
+#     Custom Model adapter
+#     """
+#     model_variation = None
 
-    def match(self, model_path: str):
-        config = WandbConfigSingleton.get_instance().config
-        return config.mtbench.custom_conv_template
+#     def match(self, model_path: str):
+#         config = WandbConfigSingleton.get_instance().config
+#         return config.mtbench.custom_conv_template
 
-    def get_default_conv_template(self, model_path:str):
-        config = WandbConfigSingleton.get_instance().config
-        return get_conv_template(config.mtbench.conv_name)
+#     def get_default_conv_template(self, model_path:str):
+#         config = WandbConfigSingleton.get_instance().config
+#         return get_conv_template(config.mtbench.conv_name)
 
 
 class XdanAdapter(BaseModelAdapter):
@@ -2452,7 +2467,7 @@ class YuanAdapter(BaseModelAdapter):
 
 # Note: the registration order matters.
 # The one registered earlier has a higher matching priority.
-register_model_adapter(CustomAdapter)  # ←追加
+# register_model_adapter(CustomAdapter)  # ←追加
 register_model_adapter(JLlama2Adapter)
 register_model_adapter(JSLMAlphaAdapter)
 register_model_adapter(PeftModelAdapter)

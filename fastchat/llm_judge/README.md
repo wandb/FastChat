@@ -17,6 +17,7 @@ To automate the evaluation process, we prompt strong LLMs like GPT-4 to act as j
 ```
 git clone -b korean https://github.com/wandb/FastChat
 cd FastChat
+pip install --upgrade pip
 pip install -e ".[model_worker,llm_judge]"
 ```
 
@@ -29,11 +30,11 @@ cd fastchat/llm_judge
 
 # Step 1. Generate model answers to MT-bench questions
 # This will generate `data/korean_mt_bench/model_answer/eeve-korean-instruct-10.8B-v1.0.jsonl`
-python gen_model_answer.py --bench-name korean_mt_bench --max-turns 1 --model-path stabilityai/eeve-korean-instruct-10.8b-v1.0.jsonl --model-id eeve-korean-instruct-10.8b-v1.0.jsonl
+python gen_model_answer.py --bench-name korean_mt_bench --model-path yanolja/EEVE-Korean-Instruct-10.8B-v1.0 --model-id eeve-korean-instruct-10.8b-v1.0.jsonl
 
 # Step 2. Generate GPT-4 judgments
 # This will generate `data/korean_mt_bench/model_judgment/gpt-4_single.jsonl`
-OPENAI_API_KEY=<API-KEY> python gen_judgment.py --bench-name korean_mt_bench --model-list eeve-korean-instruct-10.8b-v1.0.jsonl --judge-file data/judge_ja_prompts.jsonl
+OPENAI_API_KEY=<API-KEY> python gen_judgment.py --bench-name korean_mt_bench --model-list eeve-korean-instruct-10.8b-v1.0.jsonl --judge-file data/judge_ko_prompts.jsonl
 
 # Step 3. Show MT-bench scores
 python show_result.py --bench-name korean_mt_bench
