@@ -11,7 +11,7 @@ from enum import auto, IntEnum
 from io import BytesIO
 from typing import List, Any, Dict, Union, Tuple
 import wandb
-from config_singleton import WandbConfigSingleton
+# from config_singleton import WandbConfigSingleton
 
 class SeparatorStyle(IntEnum):
     """Separator styles."""
@@ -335,15 +335,15 @@ class Conversation:
                 else:
                     ret += role + ":"
             return ret
-        elif self.sep_style == SeparatorStyle.CUSTOM:
-            config = WandbConfigSingleton.get_instance().config  # ←追加
-            ret = self.system_message + self.sep
-            for role, message in self.messages:
-                if message:
-                    ret += role + config.mtbench.conv_role_message_separator + message + self.sep
-                else:
-                    ret += role + config.mtbench.conv_role_only_separator
-            return ret
+        # elif self.sep_style == SeparatorStyle.CUSTOM:
+        #     config = WandbConfigSingleton.get_instance().config  # ←追加
+        #     ret = self.system_message + self.sep
+        #     for role, message in self.messages:
+        #         if message:
+        #             ret += role + config.mtbench.conv_role_message_separator + message + self.sep
+        #         else:
+        #             ret += role + config.mtbench.conv_role_only_separator
+        #     return ret
         elif self.sep_style == SeparatorStyle.JSLM_ALPHA:
             ret = self.system_message + self.sep
             for role, message in self.messages:
@@ -1623,19 +1623,19 @@ register_conv_template(
 
 # conv template for Custom
 # source: hogehoge
-def initialize_custom_template():
-    config = WandbConfigSingleton.get_instance().config
-    register_conv_template(
-        Conversation(
-            name=config.mtbench.conv_name,
-            system_message=config.mtbench.conv_system_message,
-            roles=eval(config.mtbench.conv_roles),
-            sep_style=SeparatorStyle.CUSTOM,
-            sep=config.mtbench.conv_sep,
-            stop_token_ids=eval(config.mtbench.conv_stop_token_ids),
-            stop_str=config.mtbench.conv_stop_str,
-        )
-    )
+# def initialize_custom_template():
+#     config = WandbConfigSingleton.get_instance().config
+#     register_conv_template(
+#         Conversation(
+#             name=config.mtbench.conv_name,
+#             system_message=config.mtbench.conv_system_message,
+#             roles=eval(config.mtbench.conv_roles),
+#             sep_style=SeparatorStyle.CUSTOM,
+#             sep=config.mtbench.conv_sep,
+#             stop_token_ids=eval(config.mtbench.conv_stop_token_ids),
+#             stop_str=config.mtbench.conv_stop_str,
+#         )
+#     )
 
 # CatPPT template
 # reference: https://huggingface.co/rishiraj/CatPPT
