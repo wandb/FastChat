@@ -92,7 +92,6 @@ MISTRAL_MODEL_LIST = (
     "mistral"
 )
 
-
 class BaseModelAdapter:
     """The base and the default model adapter."""
 
@@ -142,6 +141,29 @@ class BaseModelAdapter:
     def get_default_conv_template(self, model_path: str) -> Conversation:
         return get_conv_template("one_shot")
 
+# Korean Llama3 adapter modification
+class KoLlama3Adapter(BaseModelAdapter):
+    def match(self, model_path: str):
+        return "0719-sft" in model_path.lower()
+    
+    def load_model(self, model_path: str, from_pretrained_kwargs: dict):
+        base_model_path = "/data/works/yoonforh/llama3-korean-local-merged-0719"
+        # model_path 는 adapter path 이고 여기 있는 tokenizer 를 사용하여 evaluation 을 진행한다.
+        
+        tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False, add_bos_token=True)
+        model = AutoModelForCausalLM.from_pretrained(base_model_path, device_map='auto')
+        
+        # reference PeftModelAdapter 
+        from peft import PeftConfig, PeftModel
+
+        config = PeftConfig.from_pretrained(model_path)
+        PeftModel()
+        
+        return model, tokenizer
+    
+    def get_default_conv_template() -> Conversation:
+        return get_conv_template("kollama3")
+    
 
 # A global registry for all model adapters
 # TODO (lmzheng): make it a priority queue.
