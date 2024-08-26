@@ -9,6 +9,10 @@ import os
 import random
 import time
 
+# cuda 가 볼 수 있는 GPU 번호를 제한함. 소용없어서 import torch 전에 설정해야한다고함.
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
 import shortuuid
 import torch
 from tqdm import tqdm
@@ -95,6 +99,9 @@ def get_model_answers(
         debug=False,
     )
 
+    bos = tokenizer.bos_token
+    eos = tokenizer.eos_token
+    
     for question in tqdm(questions):
         if question["category"] in temperature_config:
             temperature = temperature_config[question["category"]]
@@ -108,10 +115,10 @@ def get_model_answers(
             turns = []
             for j in range(len(question["turns"])):
                 qs = question["turns"][j]
-                conv.append_message(conv.roles[0], qs)
+                conv.append_message(conv.roles[0], qs + eos)
                 conv.append_message(conv.roles[1], None)
                 prompt = conv.get_prompt()
-                input_ids = tokenizer([prompt]).input_ids
+                input_ids = tokenizer([bos + prompt]).input_ids
 
                 if temperature < 1e-4:
                     do_sample = False
@@ -121,7 +128,7 @@ def get_model_answers(
                 # some models may error out when generating long outputs
                 try:
                     output_ids = model.generate(
-                        torch.as_tensor(input_ids).cuda(),
+                        input_ids = torch.as_tensor(input_ids).cuda(),
                         do_sample=do_sample,
                         temperature=temperature,
                         max_new_tokens=max_new_token,
@@ -271,7 +278,7 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-
+    
     if args.num_gpus_total // args.num_gpus_per_model > 1:
         import ray
 

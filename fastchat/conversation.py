@@ -517,6 +517,17 @@ def get_conv_template(name: str) -> Conversation:
     """Get a conversation template."""
     return conv_templates[name].copy()
 
+# Korean Llama3 adapter / Ellm custom 
+register_conv_template(
+    Conversation(
+        name="0719-sft",
+        system_message="<|start_header_id|>system<|end_header_id|>\n\n", # "" 보통은 없이 학습했다고.
+        roles=("<|start_header_id|>user<|end_header_id|>\n\n", "<|start_header_id|>assistant<|end_header_id|>\n\n"),
+        sep_style=SeparatorStyle.NO_COLON_SINGLE,
+        sep="",
+        # stop_str="<|eot_id|>",
+    )
+)
 
 # An empty template for raw conversation.
 register_conv_template(
@@ -593,15 +604,16 @@ register_conv_template(
 )
 
 # Vicuna v1.1 template
+# https://github.com/oobabooga/text-generation-webui/blob/main/instruction-templates/Vicuna-v1.1.yaml
 register_conv_template(
     Conversation(
         name="vicuna_v1.1",
         system_message="A chat between a curious user and an artificial intelligence assistant. "
         "The assistant gives helpful, detailed, and polite answers to the user's questions.",
         roles=("USER", "ASSISTANT"),
-        sep_style=SeparatorStyle.ADD_COLON_TWO,
-        sep=" ",
-        sep2="</s>",
+        sep_style=SeparatorStyle.ADD_COLON_TWO, # :
+        sep=" ", # 1개 생성마다 나오는 sep token
+        sep2="</s>", # 1 turn 마다 나오는 sep token
     )
 )
 
@@ -1801,5 +1813,14 @@ if __name__ == "__main__":
     conv.append_message(conv.roles[0], "こんにちは。")
     conv.append_message(conv.roles[1], "こんにちは！")
     conv.append_message(conv.roles[0], "日本で一番高い山は？")
+    conv.append_message(conv.roles[1], None)
+    print(conv.get_prompt())
+
+    print("0719 KoLlama3 template: ")
+    conv = get_conv_template("0719-sft")
+    # conv.set_system_message("SYSTEM PROMPT")
+    conv.append_message(conv.roles[0], "안녕하세요요요요요")
+    conv.append_message(conv.roles[1], "바아아아안갑습니다아아아아아")
+    conv.append_message(conv.roles[0], "예아")
     conv.append_message(conv.roles[1], None)
     print(conv.get_prompt())

@@ -140,29 +140,6 @@ class BaseModelAdapter:
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
         return get_conv_template("one_shot")
-
-# Korean Llama3 adapter modification
-class KoLlama3Adapter(BaseModelAdapter):
-    def match(self, model_path: str):
-        return "0719-sft" in model_path.lower()
-    
-    def load_model(self, model_path: str, from_pretrained_kwargs: dict):
-        base_model_path = "/data/works/yoonforh/llama3-korean-local-merged-0719"
-        # model_path 는 adapter path 이고 여기 있는 tokenizer 를 사용하여 evaluation 을 진행한다.
-        
-        tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False, add_bos_token=True)
-        model = AutoModelForCausalLM.from_pretrained(base_model_path, device_map='auto')
-        
-        # reference PeftModelAdapter 
-        from peft import PeftConfig, PeftModel
-
-        config = PeftConfig.from_pretrained(model_path)
-        PeftModel()
-        
-        return model, tokenizer
-    
-    def get_default_conv_template() -> Conversation:
-        return get_conv_template("kollama3")
     
 
 # A global registry for all model adapters
@@ -718,6 +695,32 @@ class PeftModelAdapter:
         base_model_path = config.base_model_name_or_path
         base_adapter = get_model_adapter(base_model_path)
         return base_adapter.get_default_conv_template(config.base_model_name_or_path)
+
+
+# Korean Llama3 adapter / Ellm custom
+class KoLlama3Adapter(BaseModelAdapter):
+    def match(self, model_path: str):
+        return "0719-sft" in model_path.lower()
+    
+    def load_model(self, model_path: str, from_pretrained_kwargs: dict):
+        base_model_path = "/data/works/yoonforh/llama3-korean-local-merged-0719"
+        use_fast_tokenizer = False
+        add_bos_token=True
+        # model_path 는 adapter path 이고 여기 있는 tokenizer 를 사용하여 evaluation 을 진행한다.
+        
+        tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=use_fast_tokenizer, add_bos_token=add_bos_token)
+        model = AutoModelForCausalLM.from_pretrained(base_model_path, device_map='auto')
+        
+        # reference PeftModelAdapter 
+        from peft import PeftConfig, PeftModel
+
+        # config = PeftConfig.from_pretrained(model_path)
+        model = PeftModel.from_pretrained(model, model_path, is_trainable=False)
+        
+        return model, tokenizer
+    
+    def get_default_conv_template(self, model_path: str) -> Conversation:
+        return get_conv_template("0719-sft")
 
 
 class JSLMAlphaAdapter(BaseModelAdapter):
@@ -2490,6 +2493,7 @@ class YuanAdapter(BaseModelAdapter):
 # Note: the registration order matters.
 # The one registered earlier has a higher matching priority.
 # register_model_adapter(CustomAdapter)  # ←追加
+register_model_adapter(KoLlama3Adapter) # Korean Llama3 adapter / Ellm custom
 register_model_adapter(JLlama2Adapter)
 register_model_adapter(JSLMAlphaAdapter)
 register_model_adapter(PeftModelAdapter)
