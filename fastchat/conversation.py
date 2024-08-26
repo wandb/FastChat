@@ -23,6 +23,7 @@ class SeparatorStyle(IntEnum):
     NO_COLON_TWO = auto()
     ADD_NEW_LINE_SINGLE = auto()
     LLAMA2 = auto()
+    LLAMA3 = auto()
     JLLAMA2 = auto()
     StableLMZephyr = auto()
     CHATGLM = auto()
@@ -192,6 +193,19 @@ class Conversation:
                         ret += role + " " + message + seps[i % 2]
                 else:
                     ret += role + " "
+        elif self.sep_style == SeparatorStyle.LLAMA3:
+            ret = "<|begin_of_text|>"
+            if self.system_message:
+                ret += system_prompt
+            else:
+                ret += ""
+            for i, (role, message) in enumerate(self.messages):
+                if message:
+                    ret += f"<|start_header_id|>{role}<|end_header_id|>\n\n"
+                    ret += f"{message.strip()}<|eot_id|>"
+                else:
+                    ret += f"<|start_header_id|>{role}<|end_header_id|>\n\n"
+            return ret
         #NOTE: SeparatorStyle.StableLMZephyr is same as the Duy modified SeparatorStyle.ADD_COLON_TWO bellow:
         # # cf. /admin/home-duyphung/FastChat/fastchat/conversation.py
         # elif self.sep_style == SeparatorStyle.ADD_COLON_TWO:
@@ -1235,6 +1249,21 @@ register_conv_template(
         sep_style=SeparatorStyle.LLAMA2,
         sep=" ",
         sep2=" </s><s>",
+    )
+)
+
+# llama3 template
+# reference: https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct/blob/main/tokenizer_config.json
+# reference: https://github.com/meta-llama/llama3/blob/0cee08ec68f4cfc0c89fe4a9366d82679aaa2a66/llama/tokenizer.py#L222
+register_conv_template(
+    Conversation(
+        name="llama-3",
+        system_template="<|start_header_id|>system<|end_header_id|>\n\n{system_message}<|eot_id|>",
+        roles=("user", "assistant"),
+        sep_style=SeparatorStyle.LLAMA3,
+        sep="",
+        stop_str="<|eot_id|>",
+        stop_token_ids=[128001, 128009],
     )
 )
 
