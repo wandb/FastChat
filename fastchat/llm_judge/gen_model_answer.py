@@ -186,7 +186,7 @@ def get_model_answers(
 
         # Dump answers
         os.makedirs(os.path.dirname(answer_file), exist_ok=True)
-        with open(os.path.expanduser(answer_file), "a") as fout:
+        with open(os.path.expanduser(answer_file), "a", encoding='utf-8') as fout:
             ans_json = {
                 "question_id": question["question_id"],
                 "answer_id": shortuuid.uuid(),
@@ -206,10 +206,23 @@ def reorg_answer_file(answer_file):
             answers[qid] = l
 
     qids = sorted(list(answers.keys()))
-    with open(answer_file, "w") as fout:
+    with open(answer_file, "w", encoding='utf-8') as fout:
         for qid in qids:
             fout.write(answers[qid])
 
+def translate_unicode2ko(file_name):
+    l = []
+    with open(file_name, 'r') as f:
+        for line in f:
+            l.append(json.loads(line))
+    
+    original = file_name.split('/')[-1]
+    temp = original.split('.')
+    new_file_name = file_name.replace(original, '') + temp[0] +'_new.'+ temp[-1]
+    with open(new_file_name, 'w') as f:
+        for line in l:
+            f.write(json.dumps(line, ensure_ascii=False)+'\n')
+        
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -309,3 +322,6 @@ if __name__ == "__main__":
     )
 
     reorg_answer_file(answer_file)
+
+    # file_name = 'data/korean_mt_bench/model_answer/0719-sft.jsonl'
+    # translate_unicode2ko(file_name)
