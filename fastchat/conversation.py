@@ -520,8 +520,8 @@ def get_conv_template(name: str) -> Conversation:
 # Korean Llama3 adapter / Ellm custom 
 register_conv_template(
     Conversation(
-        name="0719-sft",
-        system_message="<|start_header_id|>system<|end_header_id|>\n\n", # "" 보통은 없이 학습했다고.
+        name="0719",
+        system_message="<|start_header_id|>system<|end_header_id|>\n\n<|eot_id|>", # "" 보통은 없이 학습했다고.
         roles=("<|start_header_id|>user<|end_header_id|>\n\n", "<|start_header_id|>assistant<|end_header_id|>\n\n"),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
         sep="",
@@ -1817,7 +1817,7 @@ if __name__ == "__main__":
     print(conv.get_prompt())
 
     print("0719 KoLlama3 template: ")
-    conv = get_conv_template("0719-sft")
+    conv = get_conv_template("0719")
     # conv.set_system_message("SYSTEM PROMPT")
     conv.append_message(conv.roles[0], "안녕하세요요요요요")
     conv.append_message(conv.roles[1], "바아아아안갑습니다아아아아아")

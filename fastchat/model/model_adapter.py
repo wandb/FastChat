@@ -625,102 +625,104 @@ def remove_parent_directory_name(model_path):
 peft_model_cache = {}
 
 
-class PeftModelAdapter:
-    """Loads any "peft" model and it's base model."""
+# class PeftModelAdapter:
+#     """Loads any "peft" model and it's base model."""
 
-    def match(self, model_path: str):
-        """Accepts any model path with "peft" in the name"""
-        if os.path.exists(os.path.join(model_path, "adapter_config.json")):
-            return True
-        return "peft" in model_path.lower()
+#     def match(self, model_path: str):
+#         """Accepts any model path with "peft" in the name"""
+#         if os.path.exists(os.path.join(model_path, "adapter_config.json")):
+#             return True
+#         return "peft" in model_path.lower()
 
-    def load_model(self, model_path: str, from_pretrained_kwargs: dict):
-        """Loads the base model then the (peft) adapter weights"""
-        from peft import PeftConfig, PeftModel
+#     def load_model(self, model_path: str, from_pretrained_kwargs: dict):
+#         """Loads the base model then the (peft) adapter weights"""
+#         from peft import PeftConfig, PeftModel
 
-        config = PeftConfig.from_pretrained(model_path)
-        base_model_path = config.base_model_name_or_path
-        if "peft" in base_model_path:
-            raise ValueError(
-                f"PeftModelAdapter cannot load a base model with 'peft' in the name: {config.base_model_name_or_path}"
-            )
+#         config = PeftConfig.from_pretrained(model_path)
+#         base_model_path = config.base_model_name_or_path
+#         if "peft" in base_model_path:
+#             raise ValueError(
+#                 f"PeftModelAdapter cannot load a base model with 'peft' in the name: {config.base_model_name_or_path}"
+#             )
 
-        # Basic proof of concept for loading peft adapters that share the base
-        # weights.  This is pretty messy because Peft re-writes the underlying
-        # base model and internally stores a map of adapter layers.
-        # So, to make this work we:
-        #  1. Cache the first peft model loaded for a given base models.
-        #  2. Call `load_model` for any follow on Peft models.
-        #  3. Make sure we load the adapters by the model_path.  Why? This is
-        #  what's accessible during inference time.
-        #  4. In get_generate_stream_function, make sure we load the right
-        #  adapter before doing inference.  This *should* be safe when calls
-        #  are blocked the same semaphore.
-        if peft_share_base_weights:
-            if base_model_path in peft_model_cache:
-                model, tokenizer = peft_model_cache[base_model_path]
-                # Super important: make sure we use model_path as the
-                # `adapter_name`.
-                model.load_adapter(model_path, adapter_name=model_path)
-            else:
-                base_adapter = get_model_adapter(base_model_path)
-                base_model, tokenizer = base_adapter.load_model(
-                    base_model_path, from_pretrained_kwargs
-                )
-                # Super important: make sure we use model_path as the
-                # `adapter_name`.
-                model = PeftModel.from_pretrained(
-                    base_model, model_path, adapter_name=model_path
-                )
-                peft_model_cache[base_model_path] = (model, tokenizer)
-            return model, tokenizer
+#         # Basic proof of concept for loading peft adapters that share the base
+#         # weights.  This is pretty messy because Peft re-writes the underlying
+#         # base model and internally stores a map of adapter layers.
+#         # So, to make this work we:
+#         #  1. Cache the first peft model loaded for a given base models.
+#         #  2. Call `load_model` for any follow on Peft models.
+#         #  3. Make sure we load the adapters by the model_path.  Why? This is
+#         #  what's accessible during inference time.
+#         #  4. In get_generate_stream_function, make sure we load the right
+#         #  adapter before doing inference.  This *should* be safe when calls
+#         #  are blocked the same semaphore.
+#         if peft_share_base_weights:
+#             if base_model_path in peft_model_cache:
+#                 model, tokenizer = peft_model_cache[base_model_path]
+#                 # Super important: make sure we use model_path as the
+#                 # `adapter_name`.
+#                 model.load_adapter(model_path, adapter_name=model_path)
+#             else:
+#                 base_adapter = get_model_adapter(base_model_path)
+#                 base_model, tokenizer = base_adapter.load_model(
+#                     base_model_path, from_pretrained_kwargs
+#                 )
+#                 # Super important: make sure we use model_path as the
+#                 # `adapter_name`.
+#                 model = PeftModel.from_pretrained(
+#                     base_model, model_path, adapter_name=model_path
+#                 )
+#                 peft_model_cache[base_model_path] = (model, tokenizer)
+#             return model, tokenizer
 
-        # In the normal case, load up the base model weights again.
-        base_adapter = get_model_adapter(base_model_path)
-        base_model, tokenizer = base_adapter.load_model(
-            base_model_path, from_pretrained_kwargs
-        )
-        model = PeftModel.from_pretrained(base_model, model_path)
-        return model, tokenizer
+#         # In the normal case, load up the base model weights again.
+#         base_adapter = get_model_adapter(base_model_path)
+#         base_model, tokenizer = base_adapter.load_model(
+#             base_model_path, from_pretrained_kwargs
+#         )
+#         model = PeftModel.from_pretrained(base_model, model_path)
+#         return model, tokenizer
 
-    def get_default_conv_template(self, model_path: str) -> Conversation:
-        """Uses the conv template of the base model"""
-        from peft import PeftConfig, PeftModel
+#     def get_default_conv_template(self, model_path: str) -> Conversation:
+#         """Uses the conv template of the base model"""
+#         from peft import PeftConfig, PeftModel
 
-        config = PeftConfig.from_pretrained(model_path)
-        if "peft" in config.base_model_name_or_path:
-            raise ValueError(
-                f"PeftModelAdapter cannot load a base model with 'peft' in the name: {config.base_model_name_or_path}"
-            )
-        base_model_path = config.base_model_name_or_path
-        base_adapter = get_model_adapter(base_model_path)
-        return base_adapter.get_default_conv_template(config.base_model_name_or_path)
+#         config = PeftConfig.from_pretrained(model_path)
+#         if "peft" in config.base_model_name_or_path:
+#             raise ValueError(
+#                 f"PeftModelAdapter cannot load a base model with 'peft' in the name: {config.base_model_name_or_path}"
+#             )
+#         base_model_path = config.base_model_name_or_path
+#         base_adapter = get_model_adapter(base_model_path)
+#         return base_adapter.get_default_conv_template(config.base_model_name_or_path)
 
 
 # Korean Llama3 adapter / Ellm custom
 class KoLlama3Adapter(BaseModelAdapter):
     def match(self, model_path: str):
-        return "0719-sft" in model_path.lower()
+        return "0719" in model_path.lower()
     
     def load_model(self, model_path: str, from_pretrained_kwargs: dict):
-        base_model_path = "/data/works/yoonforh/llama3-korean-local-merged-0719"
+        # base_model_path = "/data/works/yoonforh/llama3-korean-local-merged-0719"
         use_fast_tokenizer = False
         add_bos_token=True
         # model_path 는 adapter path 이고 여기 있는 tokenizer 를 사용하여 evaluation 을 진행한다.
         
         tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=use_fast_tokenizer, add_bos_token=add_bos_token)
-        model = AutoModelForCausalLM.from_pretrained(base_model_path, device_map='auto')
+        model = AutoModelForCausalLM.from_pretrained(model_path, device_map='auto')
+        model.config.rope_theta = 283461213
+        model.config.max_position_embeddings = 262144
         
-        # reference PeftModelAdapter 
-        from peft import PeftConfig, PeftModel
+        # # reference PeftModelAdapter 
+        # from peft import PeftConfig, PeftModel
 
-        # config = PeftConfig.from_pretrained(model_path)
-        model = PeftModel.from_pretrained(model, model_path, is_trainable=False)
+        # # config = PeftConfig.from_pretrained(model_path)
+        # model = PeftModel.from_pretrained(model, model_path, is_trainable=False)
         
         return model, tokenizer
     
     def get_default_conv_template(self, model_path: str) -> Conversation:
-        return get_conv_template("0719-sft")
+        return get_conv_template("0719")
 
 
 class JSLMAlphaAdapter(BaseModelAdapter):
@@ -2496,7 +2498,7 @@ class YuanAdapter(BaseModelAdapter):
 register_model_adapter(KoLlama3Adapter) # Korean Llama3 adapter / Ellm custom
 register_model_adapter(JLlama2Adapter)
 register_model_adapter(JSLMAlphaAdapter)
-register_model_adapter(PeftModelAdapter)
+# register_model_adapter(PeftModelAdapter)
 register_model_adapter(StableVicunaAdapter)
 register_model_adapter(VicunaAdapter)
 register_model_adapter(AiroborosAdapter)

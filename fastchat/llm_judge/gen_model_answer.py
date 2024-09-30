@@ -17,9 +17,9 @@ import shortuuid
 import torch
 from tqdm import tqdm
 
-from fastchat.llm_judge.common import load_questions, temperature_config
-from fastchat.model import load_model, get_conversation_template
-from fastchat.utils import str_to_torch_dtype
+# from fastchat.llm_judge.common import load_questions, temperature_config
+# from fastchat.model import load_model, get_conversation_template
+# from fastchat.utils import str_to_torch_dtype
 
 
 def run_eval(
@@ -223,105 +223,121 @@ def translate_unicode2ko(file_name):
         for line in l:
             f.write(json.dumps(line, ensure_ascii=False)+'\n')
         
+def json_sort(file_name):
+    with open(file_name, 'r') as f:
+        l = []
+        for line in f:
+            l.append(json.loads(line))
+        new_l = [0]*len(l)
+        for line in l:
+            new_l[line["question_id"]-81] = line
+    
+    original = file_name.split('/')[-1]
+    temp = original.split('.')
+    new_file_name = file_name.replace(original, '') + temp[0] +'_new.'+ temp[-1]
+    with open(new_file_name, 'w') as f:
+        for line in new_l:
+            f.write(json.dumps(line, ensure_ascii=False)+'\n')
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--model-path",
-        type=str,
-        required=True,
-        help="The path to the weights. This can be a local folder or a Hugging Face repo ID.",
-    )
-    parser.add_argument(
-        "--model-id", type=str, required=True, help="A custom name for the model."
-    )
-    parser.add_argument(
-        "--bench-name",
-        type=str,
-        default="mt_bench",
-        help="The name of the benchmark question set.",
-    )
-    parser.add_argument(
-        "--question-begin",
-        type=int,
-        help="A debug option. The begin index of questions.",
-    )
-    parser.add_argument(
-        "--question-end", type=int, help="A debug option. The end index of questions."
-    )
-    parser.add_argument("--answer-file", type=str, help="The output answer file.")
-    parser.add_argument(
-        "--max-new-token",
-        type=int,
-        default=1024,
-        help="The maximum number of new generated tokens.",
-    )
-    parser.add_argument(
-        "--num-choices",
-        type=int,
-        default=1,
-        help="How many completion choices to generate.",
-    )
-    parser.add_argument(
-        "--num-gpus-per-model",
-        type=int,
-        default=1,
-        help="The number of GPUs per model.",
-    )
-    parser.add_argument(
-        "--num-gpus-total", type=int, default=1, help="The total number of GPUs."
-    )
-    parser.add_argument(
-        "--max-gpu-memory",
-        type=str,
-        help="Maxmum GPU memory used for model weights per GPU.",
-    )
-    parser.add_argument(
-        "--dtype",
-        type=str,
-        choices=["float32", "float16", "bfloat16"],
-        help="Override the default dtype. If not set, it will use float16 on GPU and float32 on CPU.",
-        default=None,
-    )
-    parser.add_argument(
-        "--revision",
-        type=str,
-        default="main",
-        help="The model revision to load.",
-    )
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument(
+    #     "--model-path",
+    #     type=str,
+    #     required=True,
+    #     help="The path to the weights. This can be a local folder or a Hugging Face repo ID.",
+    # )
+    # parser.add_argument(
+    #     "--model-id", type=str, required=True, help="A custom name for the model."
+    # )
+    # parser.add_argument(
+    #     "--bench-name",
+    #     type=str,
+    #     default="mt_bench",
+    #     help="The name of the benchmark question set.",
+    # )
+    # parser.add_argument(
+    #     "--question-begin",
+    #     type=int,
+    #     help="A debug option. The begin index of questions.",
+    # )
+    # parser.add_argument(
+    #     "--question-end", type=int, help="A debug option. The end index of questions."
+    # )
+    # parser.add_argument("--answer-file", type=str, help="The output answer file.")
+    # parser.add_argument(
+    #     "--max-new-token",
+    #     type=int,
+    #     default=1024,
+    #     help="The maximum number of new generated tokens.",
+    # )
+    # parser.add_argument(
+    #     "--num-choices",
+    #     type=int,
+    #     default=1,
+    #     help="How many completion choices to generate.",
+    # )
+    # parser.add_argument(
+    #     "--num-gpus-per-model",
+    #     type=int,
+    #     default=1,
+    #     help="The number of GPUs per model.",
+    # )
+    # parser.add_argument(
+    #     "--num-gpus-total", type=int, default=1, help="The total number of GPUs."
+    # )
+    # parser.add_argument(
+    #     "--max-gpu-memory",
+    #     type=str,
+    #     help="Maxmum GPU memory used for model weights per GPU.",
+    # )
+    # parser.add_argument(
+    #     "--dtype",
+    #     type=str,
+    #     choices=["float32", "float16", "bfloat16"],
+    #     help="Override the default dtype. If not set, it will use float16 on GPU and float32 on CPU.",
+    #     default=None,
+    # )
+    # parser.add_argument(
+    #     "--revision",
+    #     type=str,
+    #     default="main",
+    #     help="The model revision to load.",
+    # )
 
-    args = parser.parse_args()
+    # args = parser.parse_args()
     
-    if args.num_gpus_total // args.num_gpus_per_model > 1:
-        import ray
+    # if args.num_gpus_total // args.num_gpus_per_model > 1:
+    #     import ray
 
-        ray.init()
+    #     ray.init()
 
-    question_file = f"data/{args.bench_name}/question.jsonl"
-    if args.answer_file:
-        answer_file = args.answer_file
-    else:
-        answer_file = f"data/{args.bench_name}/model_answer/{args.model_id}.jsonl"
+    # question_file = f"llm_judge/data/{args.bench_name}/question.jsonl" # fastchat 에서 실행시 아니면 그냥 data/
+    # if args.answer_file:
+    #     answer_file = args.answer_file
+    # else:
+    #     answer_file = f"data/{args.bench_name}/model_answer/{args.model_id}.jsonl"
 
-    print(f"Output to {answer_file}")
+    # print(f"Output to {answer_file}")
 
-    run_eval(
-        model_path=args.model_path,
-        model_id=args.model_id,
-        question_file=question_file,
-        question_begin=args.question_begin,
-        question_end=args.question_end,
-        answer_file=answer_file,
-        max_new_token=args.max_new_token,
-        num_choices=args.num_choices,
-        num_gpus_per_model=args.num_gpus_per_model,
-        num_gpus_total=args.num_gpus_total,
-        max_gpu_memory=args.max_gpu_memory,
-        dtype=str_to_torch_dtype(args.dtype),
-        revision=args.revision,
-    )
+    # run_eval(
+    #     model_path=args.model_path,
+    #     model_id=args.model_id,
+    #     question_file=question_file,
+    #     question_begin=args.question_begin,
+    #     question_end=args.question_end,
+    #     answer_file=answer_file,
+    #     max_new_token=args.max_new_token,
+    #     num_choices=args.num_choices,
+    #     num_gpus_per_model=args.num_gpus_per_model,
+    #     num_gpus_total=args.num_gpus_total,
+    #     max_gpu_memory=args.max_gpu_memory,
+    #     dtype=str_to_torch_dtype(args.dtype),
+    #     revision=args.revision,
+    # )
 
-    reorg_answer_file(answer_file)
+    # reorg_answer_file(answer_file)
 
-    # file_name = 'data/korean_mt_bench/model_answer/0719-sft.jsonl'
+    file_name = 'data/korean_mt_bench/model_answer/0719-sft_240906.jsonl'
     # translate_unicode2ko(file_name)
+    json_sort(file_name)
